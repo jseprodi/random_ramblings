@@ -50,7 +50,7 @@ export async function getPosts(): Promise<BlogPost[]> {
         const response = await fetch(postsBlob.url);
         if (response.ok) {
           const posts = await response.json();
-          // Handle both array and object formats
+          // Always return array format
           if (Array.isArray(posts)) {
             return posts as BlogPost[];
           } else if (typeof posts === 'object' && posts !== null) {
@@ -62,7 +62,7 @@ export async function getPosts(): Promise<BlogPost[]> {
       }
     }
 
-    // Fallback: return empty array
+    // No posts found - return empty array
     return [];
   } catch (error) {
     console.error('Error getting posts:', error);
@@ -90,25 +90,14 @@ export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' |
       updatedAt: new Date().toISOString(),
     };
 
-    // Try to get existing posts, but don't fail if none exist
-    let existingPosts: BlogPost[] = [];
-    try {
-      existingPosts = await getPosts();
-    } catch (error) {
-      console.log('No existing posts found, starting fresh');
-    }
-
-    // Convert to map format
-    const postsMap = existingPosts.reduce((acc, post) => {
-      acc[post.slug] = post;
-      return acc;
-    }, {} as Record<string, BlogPost>);
-
-    // Add new post
-    postsMap[slug] = newPost;
+    // Simply create a posts object with just this post
+    // No need to read existing posts - just start fresh
+    const postsData = {
+      [slug]: newPost
+    };
 
     // Upload to blob storage
-    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(postsMap), {
+    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(postsData), {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,
