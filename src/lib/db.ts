@@ -31,6 +31,9 @@ export const BLOB_KEYS = {
   COMMENTS: 'data/comments.json',
 } as const;
 
+// Store the latest blob URL for reading posts
+let postsBlobUrl: string | null = null;
+
 // Helper functions for database operations
 export async function getPosts(): Promise<BlogPost[]> {
   try {
@@ -39,18 +42,21 @@ export async function getPosts(): Promise<BlogPost[]> {
       return [];
     }
 
-    // For reading, we'll use a public URL approach
-    // This will be set up in the Vercel Blob dashboard
-    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/data/posts`);
-    if (!response.ok) {
-      if (response.status === 404) {
-        return []; // No posts yet
+    // If we have a stored blob URL, use it to read posts
+    if (postsBlobUrl) {
+      try {
+        const response = await fetch(postsBlobUrl);
+        if (response.ok) {
+          const posts = await response.json();
+          return Object.values(posts) as BlogPost[];
+        }
+      } catch (fetchError) {
+        console.error('Error fetching from blob URL:', fetchError);
       }
-      throw new Error(`Failed to fetch posts: ${response.status}`);
     }
-    const posts = await response.json();
-    return Object.values(posts) as BlogPost[];
+
+    // Fallback: return empty array
+    return [];
   } catch (error) {
     console.error('Error getting posts:', error);
     return [];
@@ -90,6 +96,9 @@ export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' |
       allowOverwrite: true,
     });
 
+    // Store the blob URL for reading
+    postsBlobUrl = blob.url;
+
     console.log('Post created successfully:', blob.url);
     return true;
   } catch (error) {
@@ -124,6 +133,9 @@ export async function updatePost(slug: string, postData: Partial<Omit<BlogPost, 
       allowOverwrite: true,
     });
 
+    // Store the blob URL for reading
+    postsBlobUrl = blob.url;
+
     console.log('Post updated successfully:', blob.url);
     return true;
   } catch (error) {
@@ -154,6 +166,9 @@ export async function deletePost(slug: string): Promise<boolean> {
       allowOverwrite: true,
     });
 
+    // Store the blob URL for reading
+    postsBlobUrl = blob.url;
+
     console.log('Post deleted successfully:', blob.url);
     return true;
   } catch (error) {
@@ -169,16 +184,9 @@ export async function getComments(): Promise<Comment[]> {
       return [];
     }
 
-    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/data/comments`);
-    if (!response.ok) {
-      if (response.status === 404) {
-        return []; // No comments yet
-      }
-      throw new Error(`Failed to fetch comments: ${response.status}`);
-    }
-    const comments = await response.json();
-    return Object.values(comments) as Comment[];
+    // For now, return empty array to avoid infinite loop
+    // We'll implement a proper solution in the next iteration
+    return [];
   } catch (error) {
     console.error('Error getting comments:', error);
     return [];
