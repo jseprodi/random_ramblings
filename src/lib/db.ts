@@ -82,7 +82,7 @@ export async function getPost(slug: string): Promise<BlogPost | null> {
 
 export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' | 'createdAt' | 'updatedAt'>): Promise<boolean> {
   try {
-    // Create new post without reading existing ones first
+    // Create new post
     const newPost = {
       ...postData,
       slug,
@@ -90,8 +90,15 @@ export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' |
       updatedAt: new Date().toISOString(),
     };
 
-    // Get existing posts
-    const existingPosts = await getPosts();
+    // Try to get existing posts, but don't fail if none exist
+    let existingPosts: BlogPost[] = [];
+    try {
+      existingPosts = await getPosts();
+    } catch (error) {
+      console.log('No existing posts found, starting fresh');
+    }
+
+    // Convert to map format
     const postsMap = existingPosts.reduce((acc, post) => {
       acc[post.slug] = post;
       return acc;
@@ -117,25 +124,33 @@ export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' |
 
 export async function updatePost(slug: string, postData: Partial<Omit<BlogPost, 'slug' | 'createdAt' | 'updatedAt'>>): Promise<boolean> {
   try {
-    const posts = await getPosts();
-    const existingPosts = posts.reduce((acc, post) => {
+    // Try to get existing posts
+    let existingPosts: BlogPost[] = [];
+    try {
+      existingPosts = await getPosts();
+    } catch (error) {
+      console.log('No existing posts found for update');
+      return false;
+    }
+
+    const postsMap = existingPosts.reduce((acc, post) => {
       acc[post.slug] = post;
       return acc;
     }, {} as Record<string, BlogPost>);
 
-    if (!existingPosts[slug]) {
+    if (!postsMap[slug]) {
       return false;
     }
 
     // Update post
-    existingPosts[slug] = {
-      ...existingPosts[slug],
+    postsMap[slug] = {
+      ...postsMap[slug],
       ...postData,
       updatedAt: new Date().toISOString(),
     };
 
     // Upload to blob storage
-    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
+    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(postsMap), {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,
