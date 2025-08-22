@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
+import { getPost, updatePost, deletePost } from '@/lib/db';
 
 // GET: Retrieve a single post
 export async function GET(
@@ -10,24 +8,16 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const postsDirectory = path.join(process.cwd(), 'src/content/blog');
-    const filePath = path.join(postsDirectory, `${slug}.md`);
+    const post = await getPost(slug);
 
-    if (!fs.existsSync(filePath)) {
+    if (!post) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
       );
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    const { data, content } = matter(fileContents);
-
-    return NextResponse.json({
-      ...data,
-      content,
-      slug
-    });
+    return NextResponse.json(post);
 
   } catch (error) {
     console.error('Error reading post:', error);
@@ -56,29 +46,35 @@ export async function PUT(
       );
     }
 
-    const postsDirectory = path.join(process.cwd(), 'src/content/blog');
-    const filePath = path.join(postsDirectory, `${slug}.md`);
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
+    // Check if post exists
+    const existingPost = await getPost(slug);
+    if (!existingPost) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
       );
     }
 
-    // Create frontmatter
-    const frontmatter = matter.stringify(content, {
+    // Prepare update data
+    const updateData = {
       title,
       description: description || '',
       date: date || new Date().toISOString().split('T')[0],
       author,
       tags: tags ? tags.split(',').map((tag: string) => tag.trim()) : [],
-      status: status || 'draft'
-    });
+      status: status || 'draft',
+      content,
+    };
 
-    // Write the updated file
-    fs.writeFileSync(filePath, frontmatter, 'utf8');
+    // Update post in database
+    const success = await updatePost(slug, updateData);
+    
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Failed to update post in database' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -102,19 +98,25 @@ export async function DELETE(
 ) {
   try {
     const { slug } = await params;
-    const postsDirectory = path.join(process.cwd(), 'src/content/blog');
-    const filePath = path.join(postsDirectory, `${slug}.md`);
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
+    
+    // Check if post exists
+    const existingPost = await getPost(slug);
+    if (!existingPost) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
       );
     }
 
-    // Delete the file
-    fs.unlinkSync(filePath);
+    // Delete post from database
+    const success = await deletePost(slug);
+    
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Failed to delete post from database' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

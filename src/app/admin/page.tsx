@@ -4,8 +4,8 @@ import { getCommentStats } from '@/lib/comments';
 import { getImageStats } from '@/lib/images';
 import Link from 'next/link';
 
-export default function AdminDashboard() {
-  const posts = getSortedPostsData();
+export default async function AdminDashboard() {
+  const posts = await getSortedPostsData();
   
   const commentStats = getCommentStats();
   const imageStats = getImageStats();

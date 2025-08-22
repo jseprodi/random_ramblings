@@ -3,8 +3,8 @@ import { getSortedPostsData } from '@/lib/blog';
 import { getAvailableTags, getAvailableAuthors } from '@/lib/search';
 import SearchablePostsTable from '@/components/admin/SearchablePostsTable';
 
-export default function AdminPosts() {
-  const posts = getSortedPostsData();
+export default async function AdminPosts() {
+  const posts = await getSortedPostsData();
   const availableTags = getAvailableTags(posts);
   const availableAuthors = getAvailableAuthors(posts);
 

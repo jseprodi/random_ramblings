@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
+    "@vercel/kv": "^3.0.0",
     "date-fns": "^4.1.0",
     "gray-matter": "^4.0.3",
     "next": "15.4.6",

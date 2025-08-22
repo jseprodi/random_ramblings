@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
+import { createPost } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,35 +20,26 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    // Create frontmatter
-    const frontmatter = matter.stringify(content, {
+    // Prepare post data
+    const postData = {
       title,
       description: description || '',
       date: date || new Date().toISOString().split('T')[0],
       author,
       tags: tags ? tags.split(',').map((tag: string) => tag.trim()) : [],
-      status: status || 'draft'
-    });
+      status: status || 'draft',
+      content,
+    };
 
-    // Ensure the blog directory exists
-    const postsDirectory = path.join(process.cwd(), 'src/content/blog');
-    if (!fs.existsSync(postsDirectory)) {
-      fs.mkdirSync(postsDirectory, { recursive: true });
-    }
-
-    // Create the markdown file
-    const filePath = path.join(postsDirectory, `${slug}.md`);
+    // Create post in database
+    const success = await createPost(slug, postData);
     
-    // Check if file already exists
-    if (fs.existsSync(filePath)) {
+    if (!success) {
       return NextResponse.json(
-        { error: 'A post with this title already exists' },
-        { status: 409 }
+        { error: 'Failed to create post in database' },
+        { status: 500 }
       );
     }
-
-    // Write the file
-    fs.writeFileSync(filePath, frontmatter, 'utf8');
 
     return NextResponse.json({
       success: true,

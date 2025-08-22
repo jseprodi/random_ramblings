@@ -13,7 +13,7 @@ interface BlogPostPageProps {
 }
 
 export async function generateStaticParams() {
-  const posts = getAllPostIds();
+  const posts = await getAllPostIds();
   return posts;
 }
 
