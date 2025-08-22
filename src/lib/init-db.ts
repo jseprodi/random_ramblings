@@ -41,12 +41,14 @@ Happy blogging!`,
     }), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     // Initialize empty comments
     const commentsBlob = await put(BLOB_KEYS.COMMENTS, JSON.stringify({}), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     console.log('Database initialized successfully');

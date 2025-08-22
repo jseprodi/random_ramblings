@@ -1,4 +1,4 @@
-import { put, del } from '@vercel/blob';
+import { put } from '@vercel/blob';
 
 // Types
 export interface BlogPost {
@@ -34,9 +34,15 @@ export const BLOB_KEYS = {
 // Helper functions for database operations
 export async function getPosts(): Promise<BlogPost[]> {
   try {
+    // During build time, return empty array to avoid fetch issues
+    if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+      return [];
+    }
+
     // For reading, we'll use a public URL approach
     // This will be set up in the Vercel Blob dashboard
-    const response = await fetch(`/api/data/posts`);
+    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/data/posts`);
     if (!response.ok) {
       if (response.status === 404) {
         return []; // No posts yet
@@ -155,7 +161,13 @@ export async function deletePost(slug: string): Promise<boolean> {
 
 export async function getComments(): Promise<Comment[]> {
   try {
-    const response = await fetch(`/api/data/comments`);
+    // During build time, return empty array to avoid fetch issues
+    if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+      return [];
+    }
+
+    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/data/comments`);
     if (!response.ok) {
       if (response.status === 404) {
         return []; // No comments yet
