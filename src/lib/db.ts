@@ -87,6 +87,7 @@ export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' |
     const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     console.log('Post created successfully:', blob.url);
@@ -120,6 +121,7 @@ export async function updatePost(slug: string, postData: Partial<Omit<BlogPost, 
     const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     console.log('Post updated successfully:', blob.url);
@@ -149,6 +151,7 @@ export async function deletePost(slug: string): Promise<boolean> {
     const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     console.log('Post deleted successfully:', blob.url);
@@ -201,6 +204,7 @@ export async function createComment(commentData: Omit<Comment, 'id' | 'createdAt
     const blob = await put(BLOB_KEYS.COMMENTS, JSON.stringify(existingComments), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     console.log('Comment created successfully:', blob.url);
@@ -234,6 +238,7 @@ export async function updateComment(id: string, commentData: Partial<Omit<Commen
     const blob = await put(BLOB_KEYS.COMMENTS, JSON.stringify(existingComments), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     console.log('Comment updated successfully:', blob.url);
@@ -263,6 +268,7 @@ export async function deleteComment(id: string): Promise<boolean> {
     const blob = await put(BLOB_KEYS.COMMENTS, JSON.stringify(existingComments), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     console.log('Comment deleted successfully:', blob.url);
