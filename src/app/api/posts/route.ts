@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       description: description || '',
       date: date || new Date().toISOString().split('T')[0],
       author,
-      tags: tags ? tags.split(',').map((tag: string) => tag.trim()) : [],
+      tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map((tag: string) => tag.trim()) : []),
       status: status || 'draft',
       content,
     };
