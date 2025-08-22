@@ -50,7 +50,12 @@ export async function getPosts(): Promise<BlogPost[]> {
         const response = await fetch(postsBlob.url);
         if (response.ok) {
           const posts = await response.json();
-          return Object.values(posts) as BlogPost[];
+          // Handle both array and object formats
+          if (Array.isArray(posts)) {
+            return posts as BlogPost[];
+          } else if (typeof posts === 'object' && posts !== null) {
+            return Object.values(posts) as BlogPost[];
+          }
         }
       } catch (fetchError) {
         console.error('Error fetching from blob URL:', fetchError);
@@ -77,22 +82,26 @@ export async function getPost(slug: string): Promise<BlogPost | null> {
 
 export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' | 'createdAt' | 'updatedAt'>): Promise<boolean> {
   try {
-    const posts = await getPosts();
-    const existingPosts = posts.reduce((acc, post) => {
-      acc[post.slug] = post;
-      return acc;
-    }, {} as Record<string, BlogPost>);
-
-    // Add new post
-    existingPosts[slug] = {
+    // Create new post without reading existing ones first
+    const newPost = {
       ...postData,
       slug,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
+    // Get existing posts
+    const existingPosts = await getPosts();
+    const postsMap = existingPosts.reduce((acc, post) => {
+      acc[post.slug] = post;
+      return acc;
+    }, {} as Record<string, BlogPost>);
+
+    // Add new post
+    postsMap[slug] = newPost;
+
     // Upload to blob storage
-    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
+    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(postsMap), {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,
