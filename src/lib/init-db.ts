@@ -1,17 +1,11 @@
-import { kv } from '@vercel/kv';
-import { DB_KEYS } from './db';
+import { put } from '@vercel/blob';
+import { BLOB_KEYS } from './db';
 
 export async function initializeDatabase() {
   try {
-    // Check if database is already initialized
-    const existingPosts = await kv.get(DB_KEYS.POSTS);
-    if (existingPosts && Object.keys(existingPosts).length > 0) {
-      console.log('Database already initialized');
-      return;
-    }
-
     // Create sample post
     const samplePost = {
+      slug: 'welcome-to-js-blog',
       title: "Welcome to JS Blog",
       description: "A sample blog post to get you started",
       date: "2025-01-15",
@@ -42,17 +36,22 @@ Happy blogging!`,
     };
 
     // Initialize posts
-    await kv.set(DB_KEYS.POSTS, {
+    const postsBlob = await put(BLOB_KEYS.POSTS, JSON.stringify({
       'welcome-to-js-blog': samplePost
+    }), {
+      access: 'public',
+      addRandomSuffix: false,
     });
 
     // Initialize empty comments
-    await kv.set(DB_KEYS.COMMENTS, {});
-
-    // Initialize empty images
-    await kv.set(DB_KEYS.IMAGES, {});
+    const commentsBlob = await put(BLOB_KEYS.COMMENTS, JSON.stringify({}), {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
     console.log('Database initialized successfully');
+    console.log('Posts URL:', postsBlob.url);
+    console.log('Comments URL:', commentsBlob.url);
   } catch (error) {
     console.error('Error initializing database:', error);
   }

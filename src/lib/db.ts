@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { put, del } from '@vercel/blob';
 
 // Types
 export interface BlogPost {
@@ -25,19 +25,26 @@ export interface Comment {
   ipAddress?: string;
 }
 
-// Database keys
-export const DB_KEYS = {
-  POSTS: 'posts',
-  COMMENTS: 'comments',
-  IMAGES: 'images',
-  USERS: 'users',
+// Blob storage keys
+export const BLOB_KEYS = {
+  POSTS: 'data/posts.json',
+  COMMENTS: 'data/comments.json',
 } as const;
 
 // Helper functions for database operations
 export async function getPosts(): Promise<BlogPost[]> {
   try {
-    const posts = await kv.get(DB_KEYS.POSTS) as Record<string, BlogPost> | null;
-    return posts ? Object.values(posts) : [];
+    // For reading, we'll use a public URL approach
+    // This will be set up in the Vercel Blob dashboard
+    const response = await fetch(`/api/data/posts`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        return []; // No posts yet
+      }
+      throw new Error(`Failed to fetch posts: ${response.status}`);
+    }
+    const posts = await response.json();
+    return Object.values(posts) as BlogPost[];
   } catch (error) {
     console.error('Error getting posts:', error);
     return [];
@@ -46,8 +53,8 @@ export async function getPosts(): Promise<BlogPost[]> {
 
 export async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    const posts = await kv.get(DB_KEYS.POSTS) as Record<string, BlogPost> | null;
-    return posts?.[slug] || null;
+    const posts = await getPosts();
+    return posts.find(post => post.slug === slug) || null;
   } catch (error) {
     console.error('Error getting post:', error);
     return null;
@@ -56,14 +63,27 @@ export async function getPost(slug: string): Promise<BlogPost | null> {
 
 export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' | 'createdAt' | 'updatedAt'>): Promise<boolean> {
   try {
-    const posts = await kv.get(DB_KEYS.POSTS) as Record<string, BlogPost> | null || {};
-    posts[slug] = {
+    const posts = await getPosts();
+    const existingPosts = posts.reduce((acc, post) => {
+      acc[post.slug] = post;
+      return acc;
+    }, {} as Record<string, BlogPost>);
+
+    // Add new post
+    existingPosts[slug] = {
       ...postData,
       slug,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    await kv.set(DB_KEYS.POSTS, posts);
+
+    // Upload to blob storage
+    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+
+    console.log('Post created successfully:', blob.url);
     return true;
   } catch (error) {
     console.error('Error creating post:', error);
@@ -73,16 +93,30 @@ export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' |
 
 export async function updatePost(slug: string, postData: Partial<Omit<BlogPost, 'slug' | 'createdAt' | 'updatedAt'>>): Promise<boolean> {
   try {
-    const posts = await kv.get(DB_KEYS.POSTS) as Record<string, BlogPost> | null || {};
-    if (!posts[slug]) {
+    const posts = await getPosts();
+    const existingPosts = posts.reduce((acc, post) => {
+      acc[post.slug] = post;
+      return acc;
+    }, {} as Record<string, BlogPost>);
+
+    if (!existingPosts[slug]) {
       return false;
     }
-    posts[slug] = {
-      ...posts[slug],
+
+    // Update post
+    existingPosts[slug] = {
+      ...existingPosts[slug],
       ...postData,
       updatedAt: new Date().toISOString(),
     };
-    await kv.set(DB_KEYS.POSTS, posts);
+
+    // Upload to blob storage
+    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+
+    console.log('Post updated successfully:', blob.url);
     return true;
   } catch (error) {
     console.error('Error updating post:', error);
@@ -92,12 +126,26 @@ export async function updatePost(slug: string, postData: Partial<Omit<BlogPost, 
 
 export async function deletePost(slug: string): Promise<boolean> {
   try {
-    const posts = await kv.get(DB_KEYS.POSTS) as Record<string, BlogPost> | null || {};
-    if (!posts[slug]) {
+    const posts = await getPosts();
+    const existingPosts = posts.reduce((acc, post) => {
+      acc[post.slug] = post;
+      return acc;
+    }, {} as Record<string, BlogPost>);
+
+    if (!existingPosts[slug]) {
       return false;
     }
-    delete posts[slug];
-    await kv.set(DB_KEYS.POSTS, posts);
+
+    // Remove post
+    delete existingPosts[slug];
+
+    // Upload to blob storage
+    const blob = await put(BLOB_KEYS.POSTS, JSON.stringify(existingPosts), {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+
+    console.log('Post deleted successfully:', blob.url);
     return true;
   } catch (error) {
     console.error('Error deleting post:', error);
@@ -107,8 +155,15 @@ export async function deletePost(slug: string): Promise<boolean> {
 
 export async function getComments(): Promise<Comment[]> {
   try {
-    const comments = await kv.get(DB_KEYS.COMMENTS) as Record<string, Comment> | null;
-    return comments ? Object.values(comments) : [];
+    const response = await fetch(`/api/data/comments`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        return []; // No comments yet
+      }
+      throw new Error(`Failed to fetch comments: ${response.status}`);
+    }
+    const comments = await response.json();
+    return Object.values(comments) as Comment[];
   } catch (error) {
     console.error('Error getting comments:', error);
     return [];
@@ -117,14 +172,26 @@ export async function getComments(): Promise<Comment[]> {
 
 export async function createComment(commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<boolean> {
   try {
-    const comments = await kv.get(DB_KEYS.COMMENTS) as Record<string, Comment> | null || {};
+    const comments = await getComments();
+    const existingComments = comments.reduce((acc, comment) => {
+      acc[comment.id] = comment;
+      return acc;
+    }, {} as Record<string, Comment>);
+
     const id = `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    comments[id] = {
+    existingComments[id] = {
       ...commentData,
       id,
       createdAt: new Date().toISOString(),
     };
-    await kv.set(DB_KEYS.COMMENTS, comments);
+
+    // Upload to blob storage
+    const blob = await put(BLOB_KEYS.COMMENTS, JSON.stringify(existingComments), {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+
+    console.log('Comment created successfully:', blob.url);
     return true;
   } catch (error) {
     console.error('Error creating comment:', error);
@@ -134,16 +201,30 @@ export async function createComment(commentData: Omit<Comment, 'id' | 'createdAt
 
 export async function updateComment(id: string, commentData: Partial<Omit<Comment, 'id' | 'createdAt'>>): Promise<boolean> {
   try {
-    const comments = await kv.get(DB_KEYS.COMMENTS) as Record<string, Comment> | null || {};
-    if (!comments[id]) {
+    const comments = await getComments();
+    const existingComments = comments.reduce((acc, comment) => {
+      acc[comment.id] = comment;
+      return acc;
+    }, {} as Record<string, Comment>);
+
+    if (!existingComments[id]) {
       return false;
     }
-    comments[id] = {
-      ...comments[id],
+
+    // Update comment
+    existingComments[id] = {
+      ...existingComments[id],
       ...commentData,
       updatedAt: new Date().toISOString(),
     };
-    await kv.set(DB_KEYS.COMMENTS, comments);
+
+    // Upload to blob storage
+    const blob = await put(BLOB_KEYS.COMMENTS, JSON.stringify(existingComments), {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+
+    console.log('Comment updated successfully:', blob.url);
     return true;
   } catch (error) {
     console.error('Error updating comment:', error);
@@ -153,12 +234,26 @@ export async function updateComment(id: string, commentData: Partial<Omit<Commen
 
 export async function deleteComment(id: string): Promise<boolean> {
   try {
-    const comments = await kv.get(DB_KEYS.COMMENTS) as Record<string, Comment> | null || {};
-    if (!comments[id]) {
+    const comments = await getComments();
+    const existingComments = comments.reduce((acc, comment) => {
+      acc[comment.id] = comment;
+      return acc;
+    }, {} as Record<string, Comment>);
+
+    if (!existingComments[id]) {
       return false;
     }
-    delete comments[id];
-    await kv.set(DB_KEYS.COMMENTS, comments);
+
+    // Remove comment
+    delete existingComments[id];
+
+    // Upload to blob storage
+    const blob = await put(BLOB_KEYS.COMMENTS, JSON.stringify(existingComments), {
+      access: 'public',
+      addRandomSuffix: false,
+    });
+
+    console.log('Comment deleted successfully:', blob.url);
     return true;
   } catch (error) {
     console.error('Error deleting comment:', error);
