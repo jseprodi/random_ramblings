@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob';
+import { put, list } from '@vercel/blob';
 
 // Types
 export interface BlogPost {
@@ -31,8 +31,7 @@ export const BLOB_KEYS = {
   COMMENTS: 'data/comments.json',
 } as const;
 
-// Store the latest blob URL for reading posts
-let postsBlobUrl: string | null = null;
+
 
 // Helper functions for database operations
 export async function getPosts(): Promise<BlogPost[]> {
@@ -42,10 +41,13 @@ export async function getPosts(): Promise<BlogPost[]> {
       return [];
     }
 
-    // If we have a stored blob URL, use it to read posts
-    if (postsBlobUrl) {
+    // List blobs to find the posts file
+    const { blobs } = await list();
+    const postsBlob = blobs.find(blob => blob.pathname === BLOB_KEYS.POSTS);
+    
+    if (postsBlob) {
       try {
-        const response = await fetch(postsBlobUrl);
+        const response = await fetch(postsBlob.url);
         if (response.ok) {
           const posts = await response.json();
           return Object.values(posts) as BlogPost[];
@@ -96,9 +98,6 @@ export async function createPost(slug: string, postData: Omit<BlogPost, 'slug' |
       allowOverwrite: true,
     });
 
-    // Store the blob URL for reading
-    postsBlobUrl = blob.url;
-
     console.log('Post created successfully:', blob.url);
     return true;
   } catch (error) {
@@ -133,9 +132,6 @@ export async function updatePost(slug: string, postData: Partial<Omit<BlogPost, 
       allowOverwrite: true,
     });
 
-    // Store the blob URL for reading
-    postsBlobUrl = blob.url;
-
     console.log('Post updated successfully:', blob.url);
     return true;
   } catch (error) {
@@ -165,9 +161,6 @@ export async function deletePost(slug: string): Promise<boolean> {
       addRandomSuffix: false,
       allowOverwrite: true,
     });
-
-    // Store the blob URL for reading
-    postsBlobUrl = blob.url;
 
     console.log('Post deleted successfully:', blob.url);
     return true;
