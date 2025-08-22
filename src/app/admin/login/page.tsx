@@ -46,7 +46,7 @@ export default function AdminLogin() {
         const errorData = await response.json();
         setError(errorData.error || 'Login failed');
       }
-    } catch (error) {
+    } catch (_error: unknown) {
       setError('An error occurred during login');
     } finally {
       setIsLoading(false);

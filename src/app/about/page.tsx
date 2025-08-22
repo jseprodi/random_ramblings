@@ -17,7 +17,7 @@ export default function AboutPage() {
           <h2><b>Look...</b></h2>
           <br />
           <p>
-            We're on a rock floating in space. No one knows what they're doing.
+            We&rsquo;re on a rock floating in space. No one knows what they&rsquo;re doing.
           </p>
           <br />
           <p>
@@ -40,7 +40,7 @@ export default function AboutPage() {
           <h2><b>Get in Touch</b></h2>
           <br />
           <p>
-            Please don't.
+            Please don&rsquo;t.
           </p>
           <br />
         </div>

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { NextRequest } from 'next/server';
+// Removed unused import: import { NextRequest } from 'next/server';
 
 // Check if user is authenticated
 export async function isAuthenticated(): Promise<boolean> {

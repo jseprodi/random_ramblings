@@ -316,7 +316,7 @@ ${formData.content}
                   placeholder="Write your post content in Markdown..."
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Use Markdown syntax for formatting. Click "Insert Image" to add images from your library.
+                  Use Markdown syntax for formatting. Click &ldquo;Insert Image&rdquo; to add images from your library.
                 </p>
               </div>
 

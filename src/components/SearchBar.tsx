@@ -5,21 +5,27 @@ import { SearchFilters, searchPosts, SearchResult } from '@/lib/search';
 import { BlogPostMeta } from '@/lib/blog';
 
 interface SearchBarProps {
-  posts: BlogPostMeta[];
+  posts?: BlogPostMeta[];
   availableTags?: string[];
   availableAuthors?: string[];
   availableStatuses?: string[];
   className?: string;
   onSearchResults?: (results: SearchResult<BlogPostMeta>) => void;
+  onSearch?: (filters: SearchFilters) => void;
+  placeholder?: string;
+  showAdvanced?: boolean;
 }
 
 export default function SearchBar({
-  posts,
+  posts = [],
   availableTags = [],
   availableAuthors = [],
   availableStatuses = [],
   className = "",
-  onSearchResults
+  onSearchResults,
+  onSearch,
+  placeholder = "Search posts by title, description, author, or tags...",
+  showAdvanced = true
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -38,15 +44,21 @@ export default function SearchBar({
   const onSearchResultsRef = useRef(onSearchResults);
   const postsRef = useRef(posts);
   const filtersRef = useRef(filters);
+  const onSearchRef = useRef(onSearch);
 
   // Update refs when props change
   onSearchResultsRef.current = onSearchResults;
   postsRef.current = posts;
   filtersRef.current = filters;
+  onSearchRef.current = onSearch;
 
   // Memoized search function to avoid recreating on every render
   const performSearch = useCallback((searchQuery: string, searchFilters: SearchFilters) => {
-    if (onSearchResultsRef.current) {
+    if (onSearchRef.current) {
+      // For generic search (like comments)
+      onSearchRef.current(searchFilters);
+    } else if (onSearchResultsRef.current && postsRef.current.length > 0) {
+      // For blog post search
       const results = searchPosts(postsRef.current, searchFilters);
       onSearchResultsRef.current(results);
     }
@@ -57,10 +69,13 @@ export default function SearchBar({
     const newFilters = { ...filtersRef.current, query };
     setFilters(newFilters);
     
-    // Don't call performSearch here - it will be called when filters change
-  }, [query]); // Remove performSearch from dependencies
+    // For generic search, trigger search on query change
+    if (onSearchRef.current) {
+      performSearch(query, newFilters);
+    }
+  }, [query, performSearch]); // Add performSearch back for generic search
 
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+  const handleFilterChange = (key: keyof SearchFilters, value: string | string[] | undefined) => {
     const newFilters = { ...filtersRef.current, [key]: value };
     setFilters(newFilters);
     
@@ -111,7 +126,7 @@ export default function SearchBar({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-800 focus:outline-none focus:placeholder-gray-800 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          placeholder="Search posts by title, description, author, or tags..."
+          placeholder={placeholder}
         />
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -124,7 +139,7 @@ export default function SearchBar({
       </div>
 
       {/* Advanced Filters */}
-      {showFilters && (
+      {showFilters && showAdvanced && (
         <div className="bg-gray-50 p-4 rounded-lg space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-gray-900">Advanced Filters</h3>

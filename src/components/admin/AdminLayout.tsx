@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { siteConfig } from '@/lib/config';
+// Removed unused import: import { siteConfig } from '@/lib/config';
 import { checkAuthStatus, logout, AdminUser } from '@/lib/auth';
 
 interface AdminLayoutProps {
@@ -16,6 +16,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const router = useRouter();
+  const routerRef = useRef(router);
+  
+  // Update router ref when router changes
+  routerRef.current = router;
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: '📊' },
@@ -42,7 +46,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               setIsLoading(false);
               return;
             }
-          } catch (e) {
+          } catch (_e: unknown) {
             // Invalid stored data, clear it
             sessionStorage.removeItem('adminUser');
           }
@@ -56,11 +60,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           sessionStorage.setItem('adminUser', JSON.stringify(userData));
         } else {
           // Not authenticated, redirect to login
-          router.push('/admin/login');
+          routerRef.current.push('/admin/login');
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        router.push('/admin/login');
+        routerRef.current.push('/admin/login');
       } finally {
         setIsLoading(false);
       }

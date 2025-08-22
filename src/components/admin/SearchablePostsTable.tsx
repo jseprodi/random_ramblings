@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BlogPostMeta } from '@/lib/blog';
-import { searchPosts, SearchFilters, SearchResult } from '@/lib/search';
+import { SearchResult, searchPosts } from '@/lib/search';
 import PostsTable from './PostsTable';
 import SearchBar from '../SearchBar';
 

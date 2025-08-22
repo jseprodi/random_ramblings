@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 
 // Image storage directory
 const imagesDirectory = path.join(process.cwd(), 'src/content/images');

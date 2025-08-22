@@ -55,8 +55,8 @@ export default function NewPost() {
         throw new Error(errorData.error || 'Failed to create post');
       }
 
-      const newPost = await response.json();
-      alert(`Post "${formData.title}" created successfully!`);
+      await response.json();
+      alert(`Post &ldquo;${formData.title}&rdquo; created successfully!`);
       router.push('/admin/posts');
     } catch (error) {
       console.error('Error creating post:', error);
@@ -248,7 +248,7 @@ ${formData.content}
                   placeholder="Write your post content in Markdown..."
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Use Markdown syntax for formatting. Click "Insert Image" to add images from your library.
+                  Use Markdown syntax for formatting. Click &ldquo;Insert Image&rdquo; to add images from your library.
                 </p>
               </div>
 

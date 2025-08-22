@@ -249,7 +249,7 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">{comment.author}</p>
                       <p className="text-sm text-gray-600 truncate">{comment.content}</p>
-                      <p className="text-xs text-gray-500">on "{comment.post}" • {comment.date}</p>
+                      <p className="text-xs text-gray-500">on &ldquo;{comment.post}&rdquo; • {comment.date}</p>
                     </div>
                     <div className="flex space-x-2">
                       <button className="text-sm text-green-600 hover:text-green-800">Approve</button>

@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
         canonical: `${siteConfig.url}/blog/${slug}`,
       },
     };
-  } catch (error) {
+  } catch (_error: unknown) {
     return {
       title: 'Post Not Found | JS Blog',
       description: 'The requested blog post could not be found.',
@@ -146,7 +146,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </article>
       </>
     );
-  } catch (error) {
+  } catch (_error: unknown) {
     notFound();
   }
 }
